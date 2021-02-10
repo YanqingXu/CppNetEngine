@@ -5,10 +5,13 @@
 
 int main()
 {
+	//启动windows socket2.x环境
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA data;
 	WSAStartup(ver, &data);
 
+
+	//清除windows socket环境
 	WSACleanup();
 	return 0;
 }
