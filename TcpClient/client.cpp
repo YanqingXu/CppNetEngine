@@ -3,14 +3,9 @@
 #include<windows.h>
 #include<WinSock2.h>
 #include <iostream>
+#include "package.h"
 
 //#pragma comment(lib,"ws2_32.lib")
-
-struct DataPackage
-{
-	int age;
-	char name[32];
-};
 
 int main()
 {
@@ -56,21 +51,33 @@ int main()
 			std::cout<<"get exit command, task finished";
 			break;
 		}
+		else if (0 == strcmp(cmdBuf, "login")) {
+			Login login = { "YanqingXu","123456" };
+			DataHeader dh = { sizeof(login), CMD::CMD_LOGIN };
+			//5 send request command to server
+			send(_sock, (const char*)&dh, sizeof(dh), 0);
+			send(_sock, (const char*)&login, sizeof(login), 0);
+			// receive data from server
+			DataHeader retHeader = {};
+			LoginResult loginRet = {};
+			recv(_sock, (char*)&retHeader, sizeof(retHeader), 0);
+			recv(_sock, (char*)&loginRet, sizeof(loginRet), 0);
+			std::cout << "log info: LoginResult = " << loginRet.result << std::endl;
+		}
+		else if (0 == strcmp(cmdBuf, "logout")) {
+			Logout logout = { "YanqingXu" };
+			DataHeader dh = { sizeof(logout), CMD::CMD_LOGOUT };
+			send(_sock, (const char*)&dh, sizeof(dh), 0);
+			send(_sock, (const char*)&logout, sizeof(logout), 0);
+			DataHeader retHeader = {};
+			LogoutResult logoutRet = {};
+			recv(_sock, (char*)&retHeader, sizeof(retHeader), 0);
+			recv(_sock, (char*)&logoutRet, sizeof(logoutRet), 0);
+			std::cout << "log info: LogoutResult = " << logoutRet.result << std::endl;
+		}
 		else 
 		{
-			//5 send request to server
-			send(_sock, cmdBuf, strlen(cmdBuf) + 1, 0);
-		}
-
-		// 6 receive data from server
-		char recvBuf[128] = {};
-		int nlen = recv(_sock, recvBuf, 128, 0);
-		if (nlen > 0)
-		{
-			DataPackage* pData = (DataPackage*)recvBuf;
-			std::cout << "receive data: " << std::endl;
-			std::cout << "name: " << pData->name << std::endl;
-			std::cout << "age: " << pData->age << std::endl;
+			std::cout << "log info: wrong command" << std::endl;
 		}
 	}
 	// 7 close socket

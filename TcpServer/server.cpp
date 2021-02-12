@@ -3,13 +3,8 @@
 #include<windows.h>
 #include<WinSock2.h>
 #include <iostream>
+#include "package.h"
 //#pragma comment(lib, "ws2_32.lib")	I have added it to project dependencies
-
-struct DataPackage
-{
-	int age;
-	char name[32];
-};
 
 int main()
 {
@@ -57,23 +52,42 @@ int main()
 	char _recvBuf[128] = {};
 	while (true)
 	{
-		// 5 receive request from client
-		int nLen = recv(_cSock, _recvBuf, 128, 0);
+		DataHeader header = {};
+		// 5 receive data from client
+		int nLen = recv(_cSock, (char*)&header, sizeof(DataHeader), 0);
 		if (nLen <= 0)
 		{
-			std::cout << "log info: client exited and task finished..." << std::endl;
+			std::cout << "log info: client exited and task finished." << std::endl;
 			break;
 		}
-		std::cout << "log info: get command£º" << _recvBuf << std::endl;
-		// 6 handle request
-		if (0 == strcmp(_recvBuf, "getInfo"))
+		std::cout << "log info:" << std::endl << "receive request command: ";
+		std::cout << static_cast<int>(header.cmd) << std::endl;
+		std::cout << "data length: " << header.dataLength << std::endl;
+		switch (header.cmd)
 		{
-			DataPackage dp = { 28,"YanqingXu" };
-			send(_cSock, (const char*)&dp, sizeof(DataPackage), 0);
+		case CMD::CMD_LOGIN:
+		{
+			Login login = {};
+			recv(_cSock, (char*)&login, sizeof(Login), 0);
+			LoginResult ret = { 1 };
+			send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+			send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
 		}
-		else {
-			char msgBuf[] = "???.";
-			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+		break;
+		case CMD::CMD_LOGOUT:
+		{
+			Logout logout = {};
+			recv(_cSock, (char*)&logout, sizeof(logout), 0);
+			LogoutResult ret = { 1 };
+			send(_cSock, (char*)&header, sizeof(header), 0);
+			send(_cSock, (char*)&ret, sizeof(ret), 0);
+		}
+		break;
+		default:
+			header.cmd = CMD::CMD_ERROR;
+			header.dataLength = 0;
+			send(_cSock, (char*)&header, sizeof(header), 0);
+			break;
 		}
 	}
 	// 6 close socket
