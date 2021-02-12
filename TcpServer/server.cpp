@@ -18,7 +18,7 @@ int main()
 	// 2 bind a port used to connect a client
 	sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
-	_sin.sin_port = htons(4567);				//port
+	_sin.sin_port = htons(4567);				//Host TO Net Short(port)
 	_sin.sin_addr.S_un.S_addr = INADDR_ANY;		//ip("127.0.0.1");
 	if (SOCKET_ERROR == bind(_sock, (sockaddr*)&_sin, sizeof(_sin)))
 	{
@@ -41,18 +41,39 @@ int main()
 	sockaddr_in clientAddr = {};
 	int nAddrLen = sizeof(sockaddr_in);
 	SOCKET _cSock = INVALID_SOCKET;
-	char msgBuf[] = "Hello, I'm Server.";
+	_cSock = accept(_sock, (sockaddr*)&clientAddr, &nAddrLen);
+	if (INVALID_SOCKET == _cSock)
+	{
+		printf("log info: invalid socket...\n");
+	}
+	printf("log info: a new client added£ºIP = %s \n", inet_ntoa(clientAddr.sin_addr));
 
+	char _recvBuf[128] = {};
 	while (true)
 	{
-		_cSock = accept(_sock, (sockaddr*)&clientAddr, &nAddrLen);
-		if (INVALID_SOCKET == _cSock)
+		// 5 receive request from client
+		int nLen = recv(_cSock, _recvBuf, 128, 0);
+		if (nLen <= 0)
 		{
-			printf("log info: invalid socket...\n");
+			printf("log info: client exited and task finished...");
+			break;
 		}
-		printf("log info: a new client added£ºIP = %s \n", inet_ntoa(clientAddr.sin_addr));
-		// 5 send data to client
-		send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+		printf("logo info: get command£º%s \n", _recvBuf);
+		// 6 handle request
+		if (0 == strcmp(_recvBuf, "getName"))
+		{
+			char msgBuf[] = "YanqingXu";
+			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+		}
+		else if (0 == strcmp(_recvBuf, "getAge"))
+		{
+			char msgBuf[] = "28";
+			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+		}
+		else {
+			char msgBuf[] = "???.";
+			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+		}
 	}
 	// 6 close socket
 	closesocket(_sock);

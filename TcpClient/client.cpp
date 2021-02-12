@@ -2,27 +2,27 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include<windows.h>
 #include<WinSock2.h>
-#include <stdio.h>
+#include <iostream>
 
-#pragma comment(lib,"ws2_32.lib")
+//#pragma comment(lib,"ws2_32.lib")
 
 int main()
 {
 	//start windows socket2.x environment
 	WORD ver = MAKEWORD(2, 2);
-	WSADATA dat;
-	WSAStartup(ver, &dat);
+	WSADATA data;
+	WSAStartup(ver, &data);
 
 	//------------create a easy tcp client with socket API------------
 	// 1 create a socket
 	SOCKET _sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (INVALID_SOCKET == _sock)
 	{
-		printf("log info: creating socket failed...\n");
+		std::cout<<"log info: creating socket failed..."<<std::endl;
 	}
 	else
 	{
-		printf("log info: creating socket successfully...\n");
+		std::cout<<"log info: creating socket successfully..."<<std::endl;
 	}
 	// 2 connect to server
 	sockaddr_in _sin = {};
@@ -32,25 +32,45 @@ int main()
 	int ret = connect(_sock, (sockaddr*)&_sin, sizeof(sockaddr_in));
 	if (SOCKET_ERROR == ret)
 	{
-		printf("log info: connecting to server failed...\n");
+		std::cout<<"log info: connecting to server failed..."<<std::endl;
 	}
 	else
 	{
-		printf("log info: connecting to server successfully...\n");
+		std::cout << "log info: connecting to server successfully..." << std::endl;
 	}
-	// 3 receive data from server
-	char recvBuf[256] = {};
-	int nlen = recv(_sock, recvBuf, 256, 0);
-	if (nlen > 0)
+
+	while (true)
 	{
-		printf("receive data£º%s \n", recvBuf);
+		//3. input request command
+		char cmdBuf[128] = {};
+		std::cin >> cmdBuf;
+		//4 handle request command
+		if (0 == strcmp(cmdBuf, "exit"))
+		{
+			std::cout<<"get exit command, task finished";
+			break;
+		}
+		else 
+		{
+			//5 send request to server
+			send(_sock, cmdBuf, strlen(cmdBuf) + 1, 0);
+		}
+
+		// 6 receive data from server
+		char recvBuf[128] = {};
+		int nlen = recv(_sock, recvBuf, 128, 0);
+		if (nlen > 0)
+		{
+			std::cout << "receive data: " << recvBuf << std::endl;
+		}
 	}
-	// 4 close socket
+	// 7 close socket
 	closesocket(_sock);
 	//---------------------end ---------------------
 
 	//clean windows socket environment
 	WSACleanup();
+	std::cout<<"client exit";
 	getchar();
 	return 0;
 }
