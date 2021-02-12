@@ -2,8 +2,14 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include<windows.h>
 #include<WinSock2.h>
-#include <stdio.h>
+#include <iostream>
 //#pragma comment(lib, "ws2_32.lib")	I have added it to project dependencies
+
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
 
 int main()
 {
@@ -22,20 +28,20 @@ int main()
 	_sin.sin_addr.S_un.S_addr = INADDR_ANY;		//ip("127.0.0.1");
 	if (SOCKET_ERROR == bind(_sock, (sockaddr*)&_sin, sizeof(_sin)))
 	{
-		printf("log info: binding port 4567 failed...\n");
+		std::cout<<"log info: binding port 4567 failed..."<<std::endl;
 	}
 	else
 	{
-		printf("log info: bind port 4567 successfully...\n");
+		std::cout << "log info: bind port 4567 successfully..." << std::endl;
 	}
 	// 3 listen port
 	if (SOCKET_ERROR == listen(_sock, 5))
 	{
-		printf("log info: listen port 4567 failed...\n");
+		std::cout << "log info: listen port 4567 failed..." << std::endl;
 	}
 	else
 	{
-		printf("log info: listen port 4567 successfully...\n");
+		std::cout << "log info: listen port 4567 successfully..." << std::endl;
 	}
 	// 4 wait a client to connect it
 	sockaddr_in clientAddr = {};
@@ -44,9 +50,9 @@ int main()
 	_cSock = accept(_sock, (sockaddr*)&clientAddr, &nAddrLen);
 	if (INVALID_SOCKET == _cSock)
 	{
-		printf("log info: invalid socket...\n");
+		std::cout << "log info: invalid socket..." << std::endl;
 	}
-	printf("log info: a new client added£ºIP = %s \n", inet_ntoa(clientAddr.sin_addr));
+	std::cout << "log info: a new client added£ºIP = " << inet_ntoa(clientAddr.sin_addr) << std::endl;
 
 	char _recvBuf[128] = {};
 	while (true)
@@ -55,20 +61,15 @@ int main()
 		int nLen = recv(_cSock, _recvBuf, 128, 0);
 		if (nLen <= 0)
 		{
-			printf("log info: client exited and task finished...");
+			std::cout << "log info: client exited and task finished..." << std::endl;
 			break;
 		}
-		printf("logo info: get command£º%s \n", _recvBuf);
+		std::cout << "log info: get command£º" << _recvBuf << std::endl;
 		// 6 handle request
-		if (0 == strcmp(_recvBuf, "getName"))
+		if (0 == strcmp(_recvBuf, "getInfo"))
 		{
-			char msgBuf[] = "YanqingXu";
-			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
-		}
-		else if (0 == strcmp(_recvBuf, "getAge"))
-		{
-			char msgBuf[] = "28";
-			send(_cSock, msgBuf, strlen(msgBuf) + 1, 0);
+			DataPackage dp = { 28,"YanqingXu" };
+			send(_cSock, (const char*)&dp, sizeof(DataPackage), 0);
 		}
 		else {
 			char msgBuf[] = "???.";

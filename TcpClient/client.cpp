@@ -6,6 +6,12 @@
 
 //#pragma comment(lib,"ws2_32.lib")
 
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
+
 int main()
 {
 	//start windows socket2.x environment
@@ -61,7 +67,10 @@ int main()
 		int nlen = recv(_sock, recvBuf, 128, 0);
 		if (nlen > 0)
 		{
-			std::cout << "receive data: " << recvBuf << std::endl;
+			DataPackage* pData = (DataPackage*)recvBuf;
+			std::cout << "receive data: " << std::endl;
+			std::cout << "name: " << pData->name << std::endl;
+			std::cout << "age: " << pData->age << std::endl;
 		}
 	}
 	// 7 close socket
@@ -70,7 +79,7 @@ int main()
 
 	//clean windows socket environment
 	WSACleanup();
-	std::cout<<"client exit";
+	std::cout<<"log info: client exit";
 	getchar();
 	return 0;
 }
