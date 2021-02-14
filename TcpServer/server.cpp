@@ -3,6 +3,7 @@
 #include<windows.h>
 #include<WinSock2.h>
 #include <iostream>
+#include <string>
 #include "package.h"
 //#pragma comment(lib, "ws2_32.lib")	I have added it to project dependencies
 
@@ -60,26 +61,27 @@ int main()
 			std::cout << "log info: client exited and task finished." << std::endl;
 			break;
 		}
-		std::cout << "log info:" << std::endl << "receive request command: ";
-		std::cout << static_cast<int>(header.cmd) << std::endl;
-		std::cout << "data length: " << header.dataLength << std::endl;
 		switch (header.cmd)
 		{
 		case CMD::CMD_LOGIN:
 		{
 			Login login = {};
-			recv(_cSock, (char*)&login, sizeof(Login), 0);
-			LoginResult ret = { 1 };
-			send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+			recv(_cSock, (char*)&login + sizeof(DataHeader), sizeof(Login) - sizeof(DataHeader), 0);
+			std::cout << "receive command: CMD_LOGIN  ";
+			std::cout << "data length = " << login.dataLength << std::endl;
+			std::cout << "data info: (userName=" << login.userName << ", password=" << login.password << ")";
+			LoginResult ret;
 			send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
 		}
 		break;
 		case CMD::CMD_LOGOUT:
 		{
 			Logout logout = {};
-			recv(_cSock, (char*)&logout, sizeof(logout), 0);
-			LogoutResult ret = { 1 };
-			send(_cSock, (char*)&header, sizeof(header), 0);
+			recv(_cSock, (char*)&logout + sizeof(DataHeader), sizeof(Logout) - sizeof(DataHeader), 0);
+			std::cout << "receive command: CMD_LOGOUT  ";
+			std::cout << "data length = " << sizeof(logout) << std::endl;
+			std::cout << "data info: (userName=" << logout.userName << ")";
+			LogoutResult ret;
 			send(_cSock, (char*)&ret, sizeof(ret), 0);
 		}
 		break;

@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include<windows.h>
 #include<WinSock2.h>
 #include <iostream>
@@ -52,28 +53,23 @@ int main()
 			break;
 		}
 		else if (0 == strcmp(cmdBuf, "login")) {
-			Login login = { "YanqingXu","123456" };
-			DataHeader dh = { sizeof(login), CMD::CMD_LOGIN };
 			//5 send request command to server
-			send(_sock, (const char*)&dh, sizeof(dh), 0);
-			send(_sock, (const char*)&login, sizeof(login), 0);
+			Login login;
+			strcpy(login.userName, "YanqingXu");
+			strcpy(login.password, "123456");
+			send(_sock, (const char*)&login, sizeof(Login), 0);
 			// receive data from server
-			DataHeader retHeader = {};
 			LoginResult loginRet = {};
-			recv(_sock, (char*)&retHeader, sizeof(retHeader), 0);
 			recv(_sock, (char*)&loginRet, sizeof(loginRet), 0);
-			std::cout << "log info: LoginResult = " << loginRet.result << std::endl;
+			std::cout << "LoginResult: " << loginRet.result << std::endl;
 		}
 		else if (0 == strcmp(cmdBuf, "logout")) {
-			Logout logout = { "YanqingXu" };
-			DataHeader dh = { sizeof(logout), CMD::CMD_LOGOUT };
-			send(_sock, (const char*)&dh, sizeof(dh), 0);
-			send(_sock, (const char*)&logout, sizeof(logout), 0);
-			DataHeader retHeader = {};
+			Logout logout = {};
+			strcpy(logout.userName, "YanqingXu");
+			send(_sock, (const char*)&logout, sizeof(Logout), 0);
 			LogoutResult logoutRet = {};
-			recv(_sock, (char*)&retHeader, sizeof(retHeader), 0);
 			recv(_sock, (char*)&logoutRet, sizeof(logoutRet), 0);
-			std::cout << "log info: LogoutResult = " << logoutRet.result << std::endl;
+			std::cout << "LogoutResult: " << logoutRet.result << std::endl;
 		}
 		else 
 		{
