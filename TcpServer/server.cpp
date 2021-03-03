@@ -51,45 +51,50 @@ int main()
 	std::cout << "log info: a new client added£ºIP = " << inet_ntoa(clientAddr.sin_addr) << std::endl;
 
 	char _recvBuf[128] = {};
+
 	while (true)
 	{
-		DataHeader header = {};
+		//buffer
+		char szRecv[4096] = {};
 		// 5 receive data from client
-		int nLen = recv(_cSock, (char*)&header, sizeof(DataHeader), 0);
+		int nLen = recv(_cSock, szRecv, sizeof(DataHeader), 0);
 		if (nLen <= 0)
 		{
 			std::cout << "log info: client exited and task finished." << std::endl;
 			break;
 		}
-		switch (header.cmd)
+		DataHeader* header = (DataHeader*)szRecv;
+		switch (header->cmd)
 		{
-		case CMD::CMD_LOGIN:
-		{
-			Login login = {};
-			recv(_cSock, (char*)&login + sizeof(DataHeader), sizeof(Login) - sizeof(DataHeader), 0);
-			std::cout << "receive command: CMD_LOGIN  ";
-			std::cout << "data length = " << login.dataLength << std::endl;
-			std::cout << "data info: (userName=" << login.userName << ", password=" << login.password << ")";
-			LoginResult ret;
-			send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
-		}
-		break;
-		case CMD::CMD_LOGOUT:
-		{
-			Logout logout = {};
-			recv(_cSock, (char*)&logout + sizeof(DataHeader), sizeof(Logout) - sizeof(DataHeader), 0);
-			std::cout << "receive command: CMD_LOGOUT  ";
-			std::cout << "data length = " << sizeof(logout) << std::endl;
-			std::cout << "data info: (userName=" << logout.userName << ")";
-			LogoutResult ret;
-			send(_cSock, (char*)&ret, sizeof(ret), 0);
-		}
-		break;
-		default:
-			header.cmd = CMD::CMD_ERROR;
-			header.dataLength = 0;
-			send(_cSock, (char*)&header, sizeof(header), 0);
+			case CMD::CMD_LOGIN:
+			{
+				Login* login = reinterpret_cast<Login*>(szRecv);
+				recv(_cSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+				std::cout << "receive command: CMD_LOGIN  ";
+				std::cout << "data length = " << login->dataLength << std::endl;
+				std::cout << "data info: (userName=" << login->userName << ", password=" << login->password << ")";
+				std::cout << std::endl;
+				LoginResult ret;
+				send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
+			}
 			break;
+			case CMD::CMD_LOGOUT:
+			{
+				Logout* logout = reinterpret_cast<Logout*>(szRecv);
+				recv(_cSock, szRecv+sizeof(DataHeader), logout->dataLength - sizeof(DataHeader), 0);
+				std::cout << "receive command: CMD_LOGOUT  ";
+				std::cout << "data length = " << logout->dataLength << std::endl;
+				std::cout << "data info: (userName=" << logout->userName << ")";
+				std::cout << std::endl;
+				LogoutResult ret;
+				send(_cSock, (char*)&ret, sizeof(ret), 0);
+			}
+			break;
+			default:
+			{
+				DataHeader header = { 0,CMD::CMD_ERROR };
+				send(_cSock, (char*)&header, sizeof(header), 0);
+			}
 		}
 	}
 	// 6 close socket
