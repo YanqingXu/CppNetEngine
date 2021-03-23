@@ -8,6 +8,48 @@
 
 //#pragma comment(lib,"ws2_32.lib")
 
+int processor(SOCKET _cSock)
+{
+	//buffer
+	char szRecv[4096] = {};
+	// 5 receive data from server
+	int nLen = recv(_cSock, szRecv, sizeof(DataHeader), 0);
+	if (nLen <= 0)
+	{
+		std::cout << "failed to connect to server, task finished";
+		std::cout << std::endl;
+		return -1;
+	}
+	DataHeader* header = (DataHeader*)szRecv;
+	switch (header->cmd)
+	{
+	case CMD::CMD_LOGIN_RESULT:
+	{
+		recv(_cSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+		LoginResult* pLoginRes = (LoginResult*)szRecv;
+		std::cout << "receive data from server: CMD_LOGIN_RESULT" << std::endl;
+		std::cout << "data length: " << pLoginRes->dataLength << std::endl;
+	}
+	break;
+	case CMD::CMD_LOGOUT_RESULT:
+	{
+		recv(_cSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+		LogoutResult* pLogoutRes = (LogoutResult*)szRecv;
+		std::cout << "receive data from server: CMD_LOGOUT_RESULT" << std::endl;
+		std::cout << "data length: " << pLogoutRes->dataLength << std::endl;
+	}
+	break;
+	case CMD::CMD_NEW_USER_JOIN:
+	{
+		recv(_cSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+		NewUserJoin* pUserJoin = (NewUserJoin*)szRecv;
+		std::cout << "receive data from server: CMD_NEW_USER_JOIN" << std::endl;
+		std::cout << "data length: " << pUserJoin->dataLength << std::endl;
+	}
+	break;
+	}
+}
+
 int main()
 {
 	//start windows socket2.x environment
@@ -43,38 +85,34 @@ int main()
 
 	while (true)
 	{
-		//3. input request command
-		char cmdBuf[128] = {};
-		std::cin >> cmdBuf;
-		//4 handle request command
-		if (0 == strcmp(cmdBuf, "exit"))
+		fd_set fdReads;
+		FD_ZERO(&fdReads);
+		FD_SET(_sock, &fdReads);
+
+		timeval t = { 0, 0 };
+		int ret = select(_sock, &fdReads, 0, 0, &t);
+		if (ret < 0)
 		{
-			std::cout<<"get exit command, task finished";
+			std::cout << "select task finished";
 			break;
 		}
-		else if (0 == strcmp(cmdBuf, "login")) {
-			//5 send request command to server
-			Login login;
-			strcpy(login.userName, "YanqingXu");
-			strcpy(login.password, "123456");
-			send(_sock, (const char*)&login, sizeof(Login), 0);
-			// receive data from server
-			LoginResult loginRet = {};
-			recv(_sock, (char*)&loginRet, sizeof(loginRet), 0);
-			std::cout << "LoginResult: " << loginRet.result << std::endl;
-		}
-		else if (0 == strcmp(cmdBuf, "logout")) {
-			Logout logout = {};
-			strcpy(logout.userName, "YanqingXu");
-			send(_sock, (const char*)&logout, sizeof(Logout), 0);
-			LogoutResult logoutRet = {};
-			recv(_sock, (char*)&logoutRet, sizeof(logoutRet), 0);
-			std::cout << "LogoutResult: " << logoutRet.result << std::endl;
-		}
-		else 
+		if (FD_ISSET(_sock, &fdReads))
 		{
-			std::cout << "log info: wrong command" << std::endl;
+			FD_CLR(_sock, &fdReads);
+			if (-1 == processor(_sock))
+			{
+				std::cout << "select task finished" << std::endl;
+				break;
+			}
 		}
+
+		std::cout << "handle other things..." << std::endl;
+		
+		Login login;
+		strcpy(login.userName, "XuYanqing");
+		strcpy(login.password, "SnnyRain");
+		send(_sock, (const char*)&login, sizeof(Login), 0);
+		Sleep(1000);
 	}
 	// 7 close socket
 	closesocket(_sock);
