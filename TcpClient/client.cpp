@@ -4,6 +4,7 @@
 #include<windows.h>
 #include<WinSock2.h>
 #include <iostream>
+#include <thread>
 #include "package.h"
 
 //#pragma comment(lib,"ws2_32.lib")
@@ -50,6 +51,38 @@ int processor(SOCKET _cSock)
 	}
 }
 
+bool g_bRun = true;
+void cmdThread(SOCKET sock)
+{
+	while (true)
+	{
+		char cmdBuf[256] = {};
+		std::cin >> cmdBuf;
+		if (0 == strcmp(cmdBuf, "exit"))
+		{
+			g_bRun = false;
+			std::cout << "exit cmdThread!" << std::endl;
+			break;
+		}
+		else if (0 == strcmp(cmdBuf, "login"))
+		{
+			Login login;
+			strcpy(login.userName, "XuYanqing");
+			strcpy(login.password, "SnnyRain");
+			send(sock, (const char*)&login, sizeof(Login), 0);
+		}
+		else if (0 == strcmp(cmdBuf, "logout"))
+		{
+			Logout logout;
+			strcpy(logout.userName, "XuYanqing");
+			send(sock, (const char*)&logout, sizeof(Logout), 0);
+		}
+		else {
+			std::cout << "ERROR CMD!!!" << std::endl;
+		}
+	}
+}
+
 int main()
 {
 	//start windows socket2.x environment
@@ -82,8 +115,11 @@ int main()
 	{
 		std::cout << "log info: connecting to server successfully..." << std::endl;
 	}
+	//launch a thread
+	std::thread t(cmdThread, _sock);
+	t.detach();
 
-	while (true)
+	while (g_bRun)
 	{
 		fd_set fdReads;
 		FD_ZERO(&fdReads);
