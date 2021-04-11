@@ -1,12 +1,24 @@
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include<windows.h>
-#include<WinSock2.h>
+#ifdef _WIN32
+	#define WIN32_LEAN_AND_MEAN
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
+	#include<windows.h>
+	#include<WinSock2.h>
+	//#pragma comment(lib, "ws2_32.lib")	I have added it to project dependencies
+#else
+	#include<unistd.h>
+	#include<arpa/inet.h>
+
+	#define SOCKET int
+	#define INVALID_SOCKET (SOCKET)(~0)
+	#define SOCKET_ERROR (-1)
+#endif
+
+
 #include <iostream>
 #include <string>
 #include <vector>
 #include "package.h"
-//#pragma comment(lib, "ws2_32.lib")	I have added it to project dependencies
+
 
 
 std::vector<SOCKET> g_clients;
@@ -55,14 +67,17 @@ int processor(SOCKET _cSock)
 		send(_cSock, (char*)&header, sizeof(header), 0);
 	}
 	}
+	return 0;
 }
 
 int main()
 {
+#ifdef  _WIN32
 	//start windows socket2.x environment
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA data;
 	WSAStartup(ver, &data);
+#endif //  _WIN32
 
 	//------------create a easy tcp server with socket API------------
 	// 1 create a socket
@@ -71,7 +86,13 @@ int main()
 	sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(4567);				//Host TO Net Short(port)
+#ifdef _WIN32
 	_sin.sin_addr.S_un.S_addr = INADDR_ANY;		//ip("127.0.0.1");
+#else
+	_sin.sin_addr.s_addr = INADDR_ANY;
+#endif // _WIN32
+
+	
 	if (SOCKET_ERROR == bind(_sock, (sockaddr*)&_sin, sizeof(_sin)))
 	{
 		std::cout<<"log info: binding port 4567 failed..."<<std::endl;
@@ -137,7 +158,13 @@ int main()
 			sockaddr_in clientAddr = {};
 			int nAddrLen = sizeof(sockaddr_in);
 			SOCKET _cSock = INVALID_SOCKET;
+#ifndef _WIN32
 			_cSock = accept(_sock, (sockaddr*)&clientAddr, &nAddrLen);
+#else
+			_cSock = accept(_sock, (sockaddr*)&clientAddr, (int *)&nAddrLen);
+#endif // !_WIN32
+
+			
 			if (INVALID_SOCKET == _cSock)
 			{
 				std::cout << "ERROR, INVALID SOCKET..." << std::endl;
@@ -169,6 +196,7 @@ int main()
 		Sleep(1000);
 		std::cout << "handle other things..." << std::endl;
 	}
+#ifdef _WIN32
 	for (size_t n = g_clients.size() - 1; n >= 0; n--)
 	{
 		closesocket(g_clients[n]);
@@ -176,10 +204,18 @@ int main()
 
 	// 5 close socket
 	closesocket(_sock);
+
 	//---------------------end ---------------------
 
 	//clean windows socket environment
 	WSACleanup();
+#else
+	for (size_t n = g_clients.size() - 1; n >= 0; n--)
+	{
+		close(g_clients[n]);
+	}
+	close(_sock)
+#endif // _WIN32
 	std::cout << "Server have exited!!!" << std::endl;
 	getchar();
 	return 0;

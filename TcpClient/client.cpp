@@ -1,13 +1,25 @@
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#include<windows.h>
-#include<WinSock2.h>
+#ifdef _WIN32
+	#define WIN32_LEAN_AND_MEAN
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
+	#define _CRT_SECURE_NO_WARNINGS
+	#include<windows.h>
+	#include<WinSock2.h>
+	//#pragma comment(lib,"ws2_32.lib")
+
+#else
+	#include<unistd.h>
+	#include<arpa/inet.h>
+
+	#define SOCKET int
+	#define INVALID_SOCKET (SOCKET)(~0)
+	#define SOCKET_ERROR (-1)
+#endif
+
 #include <iostream>
 #include <thread>
 #include "package.h"
 
-//#pragma comment(lib,"ws2_32.lib")
+
 
 int processor(SOCKET _cSock)
 {
@@ -49,6 +61,7 @@ int processor(SOCKET _cSock)
 	}
 	break;
 	}
+	return 0;
 }
 
 bool g_bRun = true;
@@ -85,10 +98,12 @@ void cmdThread(SOCKET sock)
 
 int main()
 {
+#ifdef _WIN32
 	//start windows socket2.x environment
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA data;
 	WSAStartup(ver, &data);
+#endif
 
 	//------------create a easy tcp client with socket API------------
 	// 1 create a socket
@@ -105,7 +120,11 @@ int main()
 	sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(4567);
+#ifdef _WIN32
 	_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+#else 
+	_sin.sin_addr.s_addr = inet_addr("127.0.0.1");
+#endif
 	int ret = connect(_sock, (sockaddr*)&_sin, sizeof(sockaddr_in));
 	if (SOCKET_ERROR == ret)
 	{
@@ -151,11 +170,17 @@ int main()
 		Sleep(1000);
 	}
 	// 7 close socket
-	closesocket(_sock);
+	
 	//---------------------end ---------------------
-
+#ifdef _WIN32
+	closesocket(_sock);
 	//clean windows socket environment
 	WSACleanup();
+#else
+	close(_sock);
+#endif // _WIN32
+
+	
 	std::cout<<"log info: client exit";
 	getchar();
 	return 0;
